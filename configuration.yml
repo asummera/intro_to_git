@@ -1,0 +1,81 @@
+---
+- name: Configuring VTEP 1 for EVPN VXLAN Layer 2
+  hosts: vtep2
+  gather_facts: yes
+  become_method: enable
+  become: yes
+  
+  tasks:
+  - name: Enable Multicast
+    ios_command:
+      commands:
+        - configure terminal
+        - ip multicast-routing
+        - ip pim rp-address 99.99.99.10
+
+  - name: Create Layer 2 EVPN 
+    ios_command:
+      commands:
+        - configure terminal
+        - l2vpn evpn
+        - replication-type static
+        - router-id loopback 99
+        - exit
+        - l2vpn evpn instance 1 vlan-based
+        - encapsulation vxlan
+        - route-target export 104:1
+        - route-target import 103:1
+        - end
+  
+  - name: Create EVPN Instance
+    ios_command:
+      commands:
+        - configure terminal
+        - vlan configuration 99 
+        - member evpn-instance 1 vni 6000
+        - end
+  
+  - name: Create Access Facing Interface 
+    ios_command:
+      commands:
+        - configure terminal
+        - interface Te1/0/9
+        - description host1-interface
+        - switchport access vlan 99
+        - end
+  
+  - name: Create Loopback Address
+    ios_command:
+      commands:
+        - configure terminal
+        - interface Loopback99
+        - ip address 88.88.88.10 255.255.255.255
+        - ip pim sparse-mode
+        - end
+  
+  - name: Create NVE Interface
+    ios_command:
+      commands:
+        - configure terminal
+        - interface nve1
+        - no ip address
+        - source-interface loopback99
+        - host-reachability protocol bgp
+        - member vni 6000 mcast-group 232.1.1.1
+        - end
+
+  - name: BGP config on VTEP
+    ios_command:
+      commands:
+        - configure terminal
+        - router bgp 99
+        - bgp log-neighbor-changes
+        - bgp update-delay 1
+        - no bgp default ipv4-unicast
+        - neighbor 99.99.99.10 remote-as 99
+        - neighbor 99.99.99.10 update-source Loopback99
+        - address-family l2vpn evpn
+        - neighbor 99.99.99.10 activate
+        - neighbor 99.99.99.10 send-community both
+        - exit-address-family
+        - end
