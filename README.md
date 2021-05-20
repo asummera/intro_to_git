@@ -87,8 +87,14 @@ git init
 3. Set up your username and email address. If you add `--global` you only need to run these commands once as the configuration will be stored globally on your system.
 ```bash
 git config --global user.name "John Doe"
-git config --global user.email john.doe@example.com
+git config --global user.email "john.doe@example.com"
 ```
+To verify your global configuration use the command
+```bash
+git config --global --list
+```
+You can also directly access the global configurations using `git config --global --edit` which allows you to directly edit or remove lines in the file.
+
 4. After having written some files you can add all changes to your first commit
 ```bash 
 git add .
